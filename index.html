@@ -397,33 +397,15 @@
             lucide.createIcons();
         }
 
-       async function uploadToCloudinary(file) {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', UPLOAD_PRESET);
-    
-    // Transformasi otomatis ke WebP dan optimasi kualitas
-    formData.append('transformation', 'w_1200,c_limit,q_auto,f_auto');
-
-    try {
-        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { 
-            method: 'POST', 
-            body: formData 
-        });
-
-        if (!res.ok) {
-            const errorData = await res.json();
-            console.error("Cloudinary Error:", errorData); // Cek detail error di console browser
-            throw new Error(errorData.error.message || "Gagal mengunggah ke Cloudinary");
+        async function uploadToCloudinary(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', UPLOAD_PRESET);
+            const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: formData });
+            if (!res.ok) throw new Error("Gagal mengunggah foto.");
+            const d = await res.json();
+            return d.secure_url;
         }
-
-        const d = await res.json();
-        return d.secure_url;
-    } catch (err) {
-        console.error("Upload Process Error:", err);
-        throw err;
-    }
-}
 
         document.getElementById('productForm').onsubmit = async (e) => {
             e.preventDefault();
