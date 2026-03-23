@@ -402,21 +402,27 @@
     formData.append('file', file);
     formData.append('upload_preset', UPLOAD_PRESET);
     
-    // MENAMBAHKAN TRANSFORMASI OTOMATIS SAAT UPLOAD
-    // 'limit' akan mengecilkan gambar hanya jika lebarnya di atas 1200px
-    // 'auto' akan memilih kompresi terbaik agar file menjadi ringan (target < 300kb)
-    formData.append('transformation', 'w_1200,c_limit,q_auto:good,f_auto');
+    // Transformasi otomatis ke WebP dan optimasi kualitas
+    formData.append('transformation', 'w_1200,c_limit,q_auto,f_auto');
 
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { 
-        method: 'POST', 
-        body: formData 
-    });
+    try {
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { 
+            method: 'POST', 
+            body: formData 
+        });
 
-    if (!res.ok) throw new Error("Gagal mengunggah foto.");
-    const d = await res.json();
-    
-    // Hasil yang dikembalikan adalah URL gambar yang sudah terkompres di storage Cloudinary
-    return d.secure_url;
+        if (!res.ok) {
+            const errorData = await res.json();
+            console.error("Cloudinary Error:", errorData); // Cek detail error di console browser
+            throw new Error(errorData.error.message || "Gagal mengunggah ke Cloudinary");
+        }
+
+        const d = await res.json();
+        return d.secure_url;
+    } catch (err) {
+        console.error("Upload Process Error:", err);
+        throw err;
+    }
 }
 
         document.getElementById('productForm').onsubmit = async (e) => {
