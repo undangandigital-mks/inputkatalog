@@ -59,6 +59,20 @@
             object-fit: cover;
         }
 
+        .promo-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: var(--promo);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 800;
+            z-index: 5;
+            box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
+        }
+
         .multi-indicator {
             position: absolute;
             bottom: 10px;
@@ -83,7 +97,6 @@
         }
         .product-card:hover .action-btns { opacity: 1; }
 
-        /* Preview Grid Styling */
         .preview-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
@@ -190,9 +203,15 @@
                             </select>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold text-muted">HARGA (RP)</label>
-                            <input type="number" id="harga" class="form-control" required>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-muted">HARGA (RP)</label>
+                                <input type="number" id="harga" class="form-control" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-muted text-danger">HARGA PROMO (RP)</label>
+                                <input type="number" id="harga_promo" class="form-control" placeholder="Opsional">
+                            </div>
                         </div>
 
                         <div class="mb-3">
@@ -263,10 +282,13 @@
             filtered.forEach(p => {
                 const images = p.image.split(',');
                 const mainImg = images[0];
+                const hasPromo = p.is_promo === true; // Menggunakan kolom is_promo dari Supabase
+                
                 const col = document.createElement('div');
                 col.className = 'col-md-4 col-sm-6';
                 col.innerHTML = `
                     <div class="product-card shadow-sm">
+                        ${hasPromo ? '<div class="promo-badge">PROMO</div>' : ''}
                         <div class="action-btns">
                             <button class="btn btn-sm btn-light border" onclick="editProduct('${p.id}')"><i data-lucide="edit-3" size="14"></i></button>
                             <button class="btn btn-sm btn-light border text-danger" onclick="deleteProduct('${p.id}')"><i data-lucide="trash" size="14"></i></button>
@@ -277,8 +299,14 @@
                         </div>
                         <div class="p-3">
                             <h6 class="fw-bold mb-1 text-truncate">${p.nama}</h6>
-                            <p class="text-primary fw-bold mb-1">Rp${parseInt(p.harga).toLocaleString()}</p>
-                            <p class="small text-muted text-truncate mb-0">${p.deskripsi || 'Tidak ada deskripsi'}</p>
+                            <div class="mb-1">
+                                ${hasPromo ? 
+                                    `<span class="text-primary fw-bold">Rp${parseInt(p.harga_promo).toLocaleString()}</span>
+                                     <small class="text-muted text-decoration-line-through ms-1">Rp${parseInt(p.harga).toLocaleString()}</small>` : 
+                                    `<span class="text-primary fw-bold">Rp${parseInt(p.harga).toLocaleString()}</span>`
+                                }
+                            </div>
+                            <p class="small text-muted text-truncate mb-0" style="font-size: 0.75rem;">${p.deskripsi || 'Tidak ada deskripsi'}</p>
                         </div>
                     </div>
                 `;
@@ -287,9 +315,6 @@
             lucide.createIcons();
         }
 
-        /**
-         * Mengompres gambar menggunakan Canvas API
-         */
         async function compressImage(file, maxSizeKb = 300) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -301,39 +326,24 @@
                         const canvas = document.createElement('canvas');
                         let width = img.width;
                         let height = img.height;
-
                         const MAX_RESOLUTION = 1200;
                         if (width > height) {
-                            if (width > MAX_RESOLUTION) {
-                                height *= MAX_RESOLUTION / width;
-                                width = MAX_RESOLUTION;
-                            }
+                            if (width > MAX_RESOLUTION) { height *= MAX_RESOLUTION / width; width = MAX_RESOLUTION; }
                         } else {
-                            if (height > MAX_RESOLUTION) {
-                                width *= MAX_RESOLUTION / height;
-                                height = MAX_RESOLUTION;
-                            }
+                            if (height > MAX_RESOLUTION) { width *= MAX_RESOLUTION / height; height = MAX_RESOLUTION; }
                         }
-
-                        canvas.width = width;
-                        canvas.height = height;
+                        canvas.width = width; canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-
                         let quality = 0.9;
                         const step = 0.1;
-
                         const attemptCompression = (q) => {
                             canvas.toBlob((blob) => {
                                 if (!blob) return reject(new Error("Gagal mengolah canvas"));
-                                if (blob.size / 1024 <= maxSizeKb || q <= 0.1) {
-                                    resolve(blob);
-                                } else {
-                                    attemptCompression(q - step);
-                                }
+                                if (blob.size / 1024 <= maxSizeKb || q <= 0.1) { resolve(blob); } 
+                                else { attemptCompression(q - step); }
                             }, 'image/jpeg', q);
                         };
-
                         attemptCompression(quality);
                     };
                     img.onerror = reject;
@@ -346,7 +356,6 @@
             const files = Array.from(e.target.files);
             const grid = document.getElementById('imagePreviewGrid');
             grid.innerHTML = '';
-            
             if (files.length > 0) {
                 document.getElementById('previewBox').classList.remove('hidden');
                 files.forEach((file, index) => {
@@ -354,31 +363,23 @@
                     reader.onload = (ev) => {
                         const div = document.createElement('div');
                         div.className = `preview-item ${index === 0 ? 'is-main' : ''}`;
-                        div.innerHTML = `
-                            ${index === 0 ? '<div class="main-label">UTAMA</div>' : ''}
-                            <img src="${ev.target.result}">
-                        `;
+                        div.innerHTML = `${index === 0 ? '<div class="main-label">UTAMA</div>' : ''}<img src="${ev.target.result}">`;
                         grid.appendChild(div);
                     };
                     reader.readAsDataURL(file);
                 });
-            } else {
-                document.getElementById('previewBox').classList.add('hidden');
-            }
+            } else { document.getElementById('previewBox').classList.add('hidden'); }
         };
 
         async function uploadImages(files) {
             const promises = Array.from(files).map(async (file) => {
                 setLoader(true, `Mengompres & Mengupload ${file.name}...`);
                 const compressedBlob = await compressImage(file, 300);
-                
                 const formData = new FormData();
                 formData.append('file', compressedBlob);
                 formData.append('upload_preset', UPLOAD_PRESET);
-                
                 const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: formData });
                 const d = await res.json();
-                
                 if (d.error) throw new Error(d.error.message);
                 return d.secure_url;
             });
@@ -402,11 +403,16 @@
 
                 if (imageUrls.length === 0) throw new Error("Pilih gambar!");
 
+                const promoVal = document.getElementById('harga_promo').value;
+                const hargaPromoNum = promoVal ? Number(promoVal) : 0;
+                
                 const payload = {
                     nama: document.getElementById('nama').value,
                     kategori: document.getElementById('kategori').value,
                     harga: Number(document.getElementById('harga').value),
-                    deskripsi: document.getElementById('deskripsi').value, // Input deskripsi baru
+                    harga_promo: hargaPromoNum > 0 ? hargaPromoNum : null,
+                    is_promo: hargaPromoNum > 0, // Logika: True jika > 0, False jika 0 atau kosong
+                    deskripsi: document.getElementById('deskripsi').value,
                     image: imageUrls.join(',')
                 };
 
@@ -431,7 +437,8 @@
             document.getElementById('nama').value = p.nama;
             document.getElementById('kategori').value = p.kategori;
             document.getElementById('harga').value = p.harga;
-            document.getElementById('deskripsi').value = p.deskripsi || ''; // Load deskripsi saat edit
+            document.getElementById('harga_promo').value = p.harga_promo || '';
+            document.getElementById('deskripsi').value = p.deskripsi || '';
             
             const grid = document.getElementById('imagePreviewGrid');
             grid.innerHTML = '';
