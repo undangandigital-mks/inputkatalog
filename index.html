@@ -218,13 +218,13 @@
     </div>
 
     <script>
-        // Masukkan URL dan Key Anda di sini
-        const SUPABASE_URL = "sb_publishable__QkgZiZQE-03P3g9lWyVxg_pCd7O2l3";
+        // Menggunakan URL dan Key yang Anda berikan
+        const SUPABASE_URL = "https://zqxeoveanevsvynptckm.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxeGVvdmVhbmV2c3Z5bnB0Y2ttIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyNzUzODEsImV4cCI6MjA4OTg1MTM4MX0.eeIaytpW1wtWPJc2FbhufkDkhONUt9yypTZU4dTVmsM";
         
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Cloudinary Config
+        // Cloudinary Config (Untuk penyimpanan gambar)
         const CLOUD_NAME = "dqncj2lg2"; 
         const UPLOAD_PRESET = "katalogdanstok"; 
 
@@ -247,9 +247,8 @@
             }
         }
 
-        // 1. Fetch Data Awal
         async function fetchData() {
-            setLoader(true, "Memuat...", "Mengambil data dari Supabase...");
+            setLoader(true, "Memuat Data...", "Mengambil daftar produk terbaru...");
             const { data, error } = await _supabase
                 .from('products')
                 .select('*')
@@ -257,25 +256,23 @@
 
             if (error) {
                 console.error(error);
-                alert("Gagal memuat data dari Supabase");
+                setLoader(true, "Database Error", "Gagal memuat tabel 'products'. Pastikan tabel sudah dibuat di Supabase.");
             } else {
                 localData = data || [];
                 render();
+                setLoader(false);
             }
-            setLoader(false);
         }
 
-        // 2. Setup Real-time (Supabase Realtime)
         function setupRealtime() {
             _supabase
                 .channel('public:products')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, payload => {
-                    fetchData(); // Sederhana: ambil ulang semua data jika ada perubahan
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
+                    fetchData(); 
                 })
                 .subscribe();
         }
 
-        // 3. Render UI
         function render(filter = "") {
             const container = document.getElementById('gridContainer');
             container.innerHTML = '';
@@ -286,7 +283,7 @@
                 container.innerHTML = `
                     <div class="col-12 text-center py-5">
                         <i data-lucide="package-search" size="48" class="text-muted mb-3"></i>
-                        <p class="text-muted">Produk tidak ditemukan atau kosong.</p>
+                        <p class="text-muted">Katalog masih kosong atau tidak ditemukan.</p>
                     </div>`;
                 lucide.createIcons();
                 return;
@@ -324,18 +321,16 @@
             lucide.createIcons();
         }
 
-        // 4. Cloudinary Upload
         async function uploadToCloudinary(file) {
             const formData = new FormData();
             formData.append('file', file);
             formData.append('upload_preset', UPLOAD_PRESET);
             const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: formData });
-            if (!res.ok) throw new Error("Gagal mengunggah foto.");
+            if (!res.ok) throw new Error("Gagal mengunggah foto ke Cloudinary.");
             const d = await res.json();
             return d.secure_url;
         }
 
-        // 5. Save / Update
         document.getElementById('productForm').onsubmit = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnSave');
@@ -372,9 +367,9 @@
                 fetchData();
             } catch (err) {
                 alert("Error: " + err.message);
+                setLoader(false);
             } finally {
                 btn.disabled = false;
-                setLoader(false);
             }
         };
 
@@ -405,7 +400,6 @@
             lucide.createIcons();
         };
 
-        // UI Helpers
         document.getElementById('imageInput').onchange = (e) => {
             const [file] = e.target.files;
             if (file) {
