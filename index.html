@@ -199,7 +199,7 @@
                             <label class="form-label small fw-bold text-muted">UPLOAD GAMBAR (PILIH SEKALIGUS)</label>
                             <input type="file" id="imageInput" class="form-control" accept="image/*" multiple>
                             <div id="previewBox" class="mt-3 hidden">
-                                <p class="small text-muted mb-2"><i data-lucide="info" size="12"></i> Gambar pertama otomatis menjadi <b>Gambar Utama</b>.</p>
+                                <p class="small text-muted mb-2"><i data-lucide="info" size="12"></i> Gambar pertama otomatis menjadi <b>Gambar Utama</b>. File akan dikompres otomatis < 300KB.</p>
                                 <div id="imagePreviewGrid" class="preview-grid"></div>
                             </div>
                         </div>
@@ -257,7 +257,7 @@
 
             filtered.forEach(p => {
                 const images = p.image.split(',');
-                const mainImg = images[0]; // Gambar pertama adalah Utama
+                const mainImg = images[0];
                 const col = document.createElement('div');
                 col.className = 'col-md-4 col-sm-6';
                 col.innerHTML = `
@@ -281,7 +281,67 @@
             lucide.createIcons();
         }
 
-        // Handle Preview & Identifying Main Image
+        /**
+         * Mengompres gambar menggunakan Canvas API
+         * @param {File} file - File asli
+         * @param {number} maxSizeKb - Target ukuran maksimal dalam KB
+         * @returns {Promise<Blob>} - Blob terkompres
+         */
+        async function compressImage(file, maxSizeKb = 300) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+
+                        // Downscale jika resolusi terlalu besar (opsional, untuk mempercepat proses)
+                        const MAX_RESOLUTION = 1200;
+                        if (width > height) {
+                            if (width > MAX_RESOLUTION) {
+                                height *= MAX_RESOLUTION / width;
+                                width = MAX_RESOLUTION;
+                            }
+                        } else {
+                            if (height > MAX_RESOLUTION) {
+                                width *= MAX_RESOLUTION / height;
+                                height = MAX_RESOLUTION;
+                            }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        let quality = 0.9; // Mulai dengan kualitas tinggi
+                        const step = 0.1;
+
+                        const attemptCompression = (q) => {
+                            canvas.toBlob((blob) => {
+                                if (!blob) return reject(new Error("Gagal mengolah canvas"));
+                                
+                                // Jika ukuran sudah di bawah target atau kualitas sudah terlalu rendah, kembalikan hasil
+                                if (blob.size / 1024 <= maxSizeKb || q <= 0.1) {
+                                    resolve(blob);
+                                } else {
+                                    attemptCompression(q - step);
+                                }
+                            }, 'image/jpeg', q);
+                        };
+
+                        attemptCompression(quality);
+                    };
+                    img.onerror = reject;
+                };
+                reader.onerror = reject;
+            });
+        }
+
         document.getElementById('imageInput').onchange = (e) => {
             const files = Array.from(e.target.files);
             const grid = document.getElementById('imagePreviewGrid');
@@ -293,7 +353,6 @@
                     const reader = new FileReader();
                     reader.onload = (ev) => {
                         const div = document.createElement('div');
-                        // Index 0 ditandai sebagai Utama
                         div.className = `preview-item ${index === 0 ? 'is-main' : ''}`;
                         div.innerHTML = `
                             ${index === 0 ? '<div class="main-label">UTAMA</div>' : ''}
@@ -310,11 +369,20 @@
 
         async function uploadImages(files) {
             const promises = Array.from(files).map(async (file) => {
+                setLoader(true, `Mengompres & Mengupload ${file.name}...`);
+                
+                // 1. Kompres file terlebih dahulu
+                const compressedBlob = await compressImage(file, 300);
+                
+                // 2. Upload ke Cloudinary
                 const formData = new FormData();
-                formData.append('file', file);
+                formData.append('file', compressedBlob);
                 formData.append('upload_preset', UPLOAD_PRESET);
+                
                 const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: formData });
                 const d = await res.json();
+                
+                if (d.error) throw new Error(d.error.message);
                 return d.secure_url;
             });
             return await Promise.all(promises);
@@ -322,13 +390,12 @@
 
         document.getElementById('productForm').onsubmit = async (e) => {
             e.preventDefault();
-            setLoader(true, "Menyimpan...");
+            setLoader(true, "Memproses...");
             const editId = document.getElementById('editId').value;
             const files = document.getElementById('imageInput').files;
             
             try {
                 let imageUrls = [];
-                // Jika ada file baru, upload. Jika edit tanpa ganti file, gunakan data lama.
                 if (files.length > 0) {
                     imageUrls = await uploadImages(files);
                 } else if (editId) {
@@ -342,7 +409,7 @@
                     nama: document.getElementById('nama').value,
                     kategori: document.getElementById('kategori').value,
                     harga: Number(document.getElementById('harga').value),
-                    image: imageUrls.join(',') // Gabungkan URL dengan koma
+                    image: imageUrls.join(',')
                 };
 
                 if (editId) {
@@ -354,7 +421,7 @@
                 resetForm();
                 fetchData();
             } catch (err) {
-                alert(err.message);
+                alert("Terjadi kesalahan: " + err.message);
                 setLoader(false);
             }
         };
@@ -384,7 +451,7 @@
         };
 
         window.deleteProduct = async (id) => {
-            if (confirm("Hapus?")) {
+            if (confirm("Hapus produk ini?")) {
                 await _supabase.from('products').delete().eq('id', id);
                 fetchData();
             }
