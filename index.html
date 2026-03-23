@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Katalog Produk Pro - Muflih Print (Multi-Image Utama)</title>
-    <!-- Framework & Fonts -->
+    <title>Katalog Produk Pro - Muflih Print (Drag & Drop Order)</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Supabase JS Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    
     <style>
         :root {
             --primary: #4f46e5;
@@ -97,6 +97,7 @@
         }
         .product-card:hover .action-btns { opacity: 1; }
 
+        /* PREVIEW STYLES */
         .preview-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
@@ -109,7 +110,10 @@
             overflow: hidden;
             border: 2px solid #e2e8f0;
             position: relative;
+            cursor: grab;
+            background: white;
         }
+        .preview-item:active { cursor: grabbing; }
         .preview-item img {
             width: 100%;
             height: 100%;
@@ -121,15 +125,19 @@
         }
         .main-label {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
+            top: 0; left: 0; right: 0;
             background: var(--primary);
             color: white;
             font-size: 8px;
             text-align: center;
             font-weight: 800;
             padding: 2px 0;
+            z-index: 2;
+        }
+        /* Sortable Ghost Style */
+        .sortable-ghost {
+            opacity: 0.4;
+            border: 2px dashed var(--primary);
         }
 
         .loading-overlay {
@@ -178,7 +186,6 @@
         </header>
 
         <div class="row g-4">
-            <!-- FORM INPUT -->
             <div class="col-xl-4">
                 <div class="main-card">
                     <div class="d-flex align-items-center mb-4">
@@ -223,7 +230,9 @@
                             <label class="form-label small fw-bold text-muted">UPLOAD GAMBAR (PILIH SEKALIGUS)</label>
                             <input type="file" id="imageInput" class="form-control" accept="image/*" multiple>
                             <div id="previewBox" class="mt-3 hidden">
-                                <p class="small text-muted mb-2"><i data-lucide="info" size="12"></i> Gambar pertama otomatis menjadi <b>Gambar Utama</b>. File akan dikompres otomatis < 300KB.</p>
+                                <p class="small text-muted mb-2">
+                                    <i data-lucide="move" size="12"></i> <b>Seret gambar</b> untuk mengatur urutan. Gambar paling kiri adalah <b>Utama</b>.
+                                </p>
                                 <div id="imagePreviewGrid" class="preview-grid"></div>
                             </div>
                         </div>
@@ -236,7 +245,6 @@
                 </div>
             </div>
 
-            <!-- KATALOG -->
             <div class="col-xl-8">
                 <div class="mb-4 d-flex justify-content-between align-items-center">
                     <div class="search-box w-50">
@@ -258,6 +266,17 @@
         const UPLOAD_PRESET = "katalogdanstok"; 
 
         let localData = [];
+        let currentFiles = []; // Menyimpan file asli atau URL untuk diurutkan
+
+        // Inisialisasi SortableJS
+        const el = document.getElementById('imagePreviewGrid');
+        const sortable = Sortable.create(el, {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            onEnd: function() {
+                updatePreviewLabels();
+            }
+        });
 
         window.onload = () => { fetchData(); lucide.createIcons(); };
 
@@ -282,7 +301,7 @@
             filtered.forEach(p => {
                 const images = p.image.split(',');
                 const mainImg = images[0];
-                const hasPromo = p.is_promo === true; // Menggunakan kolom is_promo dari Supabase
+                const hasPromo = p.is_promo === true;
                 
                 const col = document.createElement('div');
                 col.className = 'col-md-4 col-sm-6';
@@ -315,6 +334,46 @@
             lucide.createIcons();
         }
 
+        // Fungsi label ulang "Utama" saat drag selesai
+        function updatePreviewLabels() {
+            const items = document.querySelectorAll('.preview-item');
+            items.forEach((item, idx) => {
+                item.classList.toggle('is-main', idx === 0);
+                const label = item.querySelector('.main-label');
+                if (idx === 0) {
+                    if (!label) {
+                        const newLabel = document.createElement('div');
+                        newLabel.className = 'main-label';
+                        newLabel.innerText = 'UTAMA';
+                        item.prepend(newLabel);
+                    }
+                } else {
+                    if (label) label.remove();
+                }
+            });
+        }
+
+        document.getElementById('imageInput').onchange = (e) => {
+            const files = Array.from(e.target.files);
+            const grid = document.getElementById('imagePreviewGrid');
+            grid.innerHTML = '';
+            
+            if (files.length > 0) {
+                document.getElementById('previewBox').classList.remove('hidden');
+                files.forEach((file, index) => {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        const div = document.createElement('div');
+                        div.className = `preview-item ${index === 0 ? 'is-main' : ''}`;
+                        div.dataset.fileName = file.name; // Simpan referensi nama file
+                        div.innerHTML = `${index === 0 ? '<div class="main-label">UTAMA</div>' : ''}<img src="${ev.target.result}">`;
+                        grid.appendChild(div);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            } else { document.getElementById('previewBox').classList.add('hidden'); }
+        };
+
         async function compressImage(file, maxSizeKb = 300) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -324,108 +383,82 @@
                     img.src = event.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        let width = img.width;
-                        let height = img.height;
-                        const MAX_RESOLUTION = 1200;
-                        if (width > height) {
-                            if (width > MAX_RESOLUTION) { height *= MAX_RESOLUTION / width; width = MAX_RESOLUTION; }
-                        } else {
-                            if (height > MAX_RESOLUTION) { width *= MAX_RESOLUTION / height; height = MAX_RESOLUTION; }
-                        }
+                        let width = img.width; let height = img.height;
+                        const MAX_RES = 1200;
+                        if (width > height) { if (width > MAX_RES) { height *= MAX_RES / width; width = MAX_RES; } }
+                        else { if (height > MAX_RES) { width *= MAX_RES / height; height = MAX_RES; } }
                         canvas.width = width; canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-                        let quality = 0.9;
-                        const step = 0.1;
-                        const attemptCompression = (q) => {
+                        const attempt = (q) => {
                             canvas.toBlob((blob) => {
-                                if (!blob) return reject(new Error("Gagal mengolah canvas"));
-                                if (blob.size / 1024 <= maxSizeKb || q <= 0.1) { resolve(blob); } 
-                                else { attemptCompression(q - step); }
+                                if (blob.size / 1024 <= maxSizeKb || q <= 0.1) resolve(blob);
+                                else attempt(q - 0.1);
                             }, 'image/jpeg', q);
                         };
-                        attemptCompression(quality);
+                        attempt(0.9);
                     };
-                    img.onerror = reject;
                 };
-                reader.onerror = reject;
             });
-        }
-
-        document.getElementById('imageInput').onchange = (e) => {
-            const files = Array.from(e.target.files);
-            const grid = document.getElementById('imagePreviewGrid');
-            grid.innerHTML = '';
-            if (files.length > 0) {
-                document.getElementById('previewBox').classList.remove('hidden');
-                files.forEach((file, index) => {
-                    const reader = new FileReader();
-                    reader.onload = (ev) => {
-                        const div = document.createElement('div');
-                        div.className = `preview-item ${index === 0 ? 'is-main' : ''}`;
-                        div.innerHTML = `${index === 0 ? '<div class="main-label">UTAMA</div>' : ''}<img src="${ev.target.result}">`;
-                        grid.appendChild(div);
-                    };
-                    reader.readAsDataURL(file);
-                });
-            } else { document.getElementById('previewBox').classList.add('hidden'); }
-        };
-
-        async function uploadImages(files) {
-            const promises = Array.from(files).map(async (file) => {
-                setLoader(true, `Mengompres & Mengupload ${file.name}...`);
-                const compressedBlob = await compressImage(file, 300);
-                const formData = new FormData();
-                formData.append('file', compressedBlob);
-                formData.append('upload_preset', UPLOAD_PRESET);
-                const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: formData });
-                const d = await res.json();
-                if (d.error) throw new Error(d.error.message);
-                return d.secure_url;
-            });
-            return await Promise.all(promises);
         }
 
         document.getElementById('productForm').onsubmit = async (e) => {
             e.preventDefault();
             setLoader(true, "Memproses...");
             const editId = document.getElementById('editId').value;
-            const files = document.getElementById('imageInput').files;
+            
+            // Ambil urutan gambar dari DOM
+            const previewItems = Array.from(document.querySelectorAll('.preview-item'));
+            const filesFromInput = Array.from(document.getElementById('imageInput').files);
             
             try {
-                let imageUrls = [];
-                if (files.length > 0) {
-                    imageUrls = await uploadImages(files);
-                } else if (editId) {
-                    const existing = localData.find(x => x.id === editId);
-                    imageUrls = existing.image.split(',');
+                let finalUrls = [];
+
+                for (let item of previewItems) {
+                    const imgTag = item.querySelector('img');
+                    const src = imgTag.getAttribute('src');
+
+                    if (src.startsWith('http')) {
+                        // Jika sudah URL (saat edit)
+                        finalUrls.push(src);
+                    } else {
+                        // Jika base64 (file baru), cari file aslinya di input berdasarkan nama (opsi simpel)
+                        // atau temukan berdasarkan index/data attribute
+                        const fileName = item.dataset.fileName;
+                        const fileMatch = filesFromInput.find(f => f.name === fileName);
+                        
+                        if (fileMatch) {
+                            setLoader(true, `Mengupload ${fileMatch.name}...`);
+                            const blob = await compressImage(fileMatch);
+                            const formData = new FormData();
+                            formData.append('file', blob);
+                            formData.append('upload_preset', UPLOAD_PRESET);
+                            const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: formData });
+                            const d = await res.json();
+                            finalUrls.push(d.secure_url);
+                        }
+                    }
                 }
 
-                if (imageUrls.length === 0) throw new Error("Pilih gambar!");
+                if (finalUrls.length === 0) throw new Error("Pilih gambar!");
 
-                const promoVal = document.getElementById('harga_promo').value;
-                const hargaPromoNum = promoVal ? Number(promoVal) : 0;
-                
                 const payload = {
                     nama: document.getElementById('nama').value,
                     kategori: document.getElementById('kategori').value,
                     harga: Number(document.getElementById('harga').value),
-                    harga_promo: hargaPromoNum > 0 ? hargaPromoNum : null,
-                    is_promo: hargaPromoNum > 0, // Logika: True jika > 0, False jika 0 atau kosong
+                    harga_promo: Number(document.getElementById('harga_promo').value) || null,
+                    is_promo: Number(document.getElementById('harga_promo').value) > 0,
                     deskripsi: document.getElementById('deskripsi').value,
-                    image: imageUrls.join(',')
+                    image: finalUrls.join(',')
                 };
 
-                if (editId) {
-                    await _supabase.from('products').update(payload).eq('id', editId);
-                } else {
-                    await _supabase.from('products').insert([payload]);
-                }
+                if (editId) await _supabase.from('products').update(payload).eq('id', editId);
+                else await _supabase.from('products').insert([payload]);
 
                 resetForm();
                 fetchData();
             } catch (err) {
-                alert("Terjadi kesalahan: " + err.message);
+                alert("Gagal: " + err.message);
                 setLoader(false);
             }
         };
@@ -433,6 +466,7 @@
         window.editProduct = (id) => {
             const p = localData.find(i => i.id === id);
             if (!p) return;
+            resetForm();
             document.getElementById('editId').value = p.id;
             document.getElementById('nama').value = p.nama;
             document.getElementById('kategori').value = p.kategori;
@@ -466,6 +500,7 @@
         window.resetForm = () => {
             document.getElementById('productForm').reset();
             document.getElementById('editId').value = "";
+            document.getElementById('imagePreviewGrid').innerHTML = "";
             document.getElementById('previewBox').classList.add('hidden');
             document.getElementById('btnCancel').classList.add('hidden');
             document.getElementById('formHeader').innerText = "Tambah Produk";
