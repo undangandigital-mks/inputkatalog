@@ -16,6 +16,7 @@
             --promo: #ef4444;
             --bg: #f8fafc;
             --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --gold: #f59e0b;
         }
         body { 
             background-color: var(--bg); 
@@ -96,6 +97,18 @@
             z-index: 5;
         }
         
+        /* Category Badges Styling */
+        .badge-cat {
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .cat-basic { background: #e0f2fe; color: #0369a1; }
+        .cat-premium { background: #e0e7ff; color: #4338ca; }
+        .cat-eksklusif { background: #fef3c7; color: #b45309; border: 1px solid #fcd34d; }
+        
         .search-box {
             position: relative;
         }
@@ -119,6 +132,20 @@
         .btn-primary:hover {
             background-color: #4338ca;
         }
+        .filter-btn {
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            border: 1px solid #e2e8f0;
+            background: white;
+            color: #64748b;
+        }
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
     </style>
 </head>
 <body>
@@ -133,7 +160,7 @@
     <div class="container-fluid py-4 px-lg-5">
         <header class="mb-5 text-center">
             <h2 class="fw-800 text-primary mb-0">MUFLIH PRINT</h2>
-            <p class="text-muted">Katalog Produk & Supabase Database</p>
+            <p class="text-muted">Manajemen Katalog & Kualitas Produk</p>
         </header>
 
         <div class="row g-4">
@@ -150,7 +177,18 @@
                         
                         <div class="mb-3">
                             <label class="form-label small fw-bold text-muted">NAMA PRODUK</label>
-                            <input type="text" id="nama" class="form-control" placeholder="Contoh: Cetak Banner 2x1" required>
+                            <input type="text" id="nama" class="form-control" placeholder="Contoh: Cetak Foto Bingkai" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">KATEGORI PRODUK</label>
+                            <select id="kategori" class="form-select" required>
+                                <option value="" disabled selected>Pilih Kategori</option>
+                                <option value="Basic">Basic</option>
+                                <option value="Premium">Premium</option>
+                                <option value="Eksklusif">Eksklusif</option>
+                            </select>
+                            <div class="form-text small">Tentukan tingkatan kualitas layanan/produk.</div>
                         </div>
 
                         <div class="row g-2">
@@ -174,7 +212,7 @@
 
                         <div class="mb-3">
                             <label class="form-label small fw-bold text-muted">DESKRIPSI</label>
-                            <textarea id="deskripsi" class="form-control" rows="2" placeholder="Detail produk..."></textarea>
+                            <textarea id="deskripsi" class="form-control" rows="2" placeholder="Detail spesifikasi produk..."></textarea>
                         </div>
 
                         <div class="mb-4">
@@ -188,7 +226,7 @@
 
                         <div class="d-grid gap-2">
                             <button type="submit" id="btnSave" class="btn btn-primary py-3 fw-bold">
-                                <i data-lucide="save" class="me-2" size="18"></i>SIMPAN KE SUPABASE
+                                <i data-lucide="save" class="me-2" size="18"></i>SIMPAN KE CLOUD
                             </button>
                             <button type="button" id="btnCancel" class="btn btn-outline-secondary py-2 hidden" onclick="resetForm()">
                                 BATALKAN EDIT
@@ -200,13 +238,23 @@
 
             <!-- KATALOG DISPLAY -->
             <div class="col-xl-8">
-                <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
-                    <div class="search-box w-100 shadow-sm" style="max-width: 400px;">
-                        <i data-lucide="search" size="18"></i>
-                        <input type="text" id="searchInput" class="form-control border-0" placeholder="Cari nama produk...">
+                <div class="mb-4">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 mb-3">
+                        <div class="search-box w-100 shadow-sm" style="max-width: 400px;">
+                            <i data-lucide="search" size="18"></i>
+                            <input type="text" id="searchInput" class="form-control border-0" placeholder="Cari nama produk...">
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span id="counter" class="badge bg-primary rounded-pill px-3 py-2">0 Item</span>
+                        </div>
                     </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <span id="counter" class="badge bg-primary rounded-pill px-3 py-2">0 Item</span>
+                    
+                    <!-- Kategori Filter -->
+                    <div class="d-flex flex-wrap gap-2" id="filterContainer">
+                        <button class="btn filter-btn active" onclick="setFilter('Semua')">Semua</button>
+                        <button class="btn filter-btn" onclick="setFilter('Basic')">Basic</button>
+                        <button class="btn filter-btn" onclick="setFilter('Premium')">Premium</button>
+                        <button class="btn filter-btn" onclick="setFilter('Eksklusif')">Eksklusif</button>
                     </div>
                 </div>
 
@@ -218,17 +266,18 @@
     </div>
 
     <script>
-        // Menggunakan URL dan Key yang Anda berikan
+        // Konfigurasi Supabase
         const SUPABASE_URL = "https://zqxeoveanevsvynptckm.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxeGVvdmVhbmV2c3Z5bnB0Y2ttIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyNzUzODEsImV4cCI6MjA4OTg1MTM4MX0.eeIaytpW1wtWPJc2FbhufkDkhONUt9yypTZU4dTVmsM";
         
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Cloudinary Config (Untuk penyimpanan gambar)
+        // Cloudinary Config
         const CLOUD_NAME = "dqncj2lg2"; 
         const UPLOAD_PRESET = "katalogdanstok"; 
 
         let localData = [];
+        let currentFilterCategory = "Semua";
 
         window.onload = () => {
             lucide.createIcons();
@@ -248,7 +297,7 @@
         }
 
         async function fetchData() {
-            setLoader(true, "Memuat Data...", "Mengambil daftar produk terbaru...");
+            setLoader(true, "Sinkronisasi...", "Mengunduh data katalog dari server...");
             const { data, error } = await _supabase
                 .from('products')
                 .select('*')
@@ -256,7 +305,7 @@
 
             if (error) {
                 console.error(error);
-                setLoader(true, "Database Error", "Gagal memuat tabel 'products'. Pastikan tabel sudah dibuat di Supabase.");
+                setLoader(true, "Koneksi Bermasalah", "Gagal memuat tabel 'products'. Silakan cek kolom kategori di Supabase.");
             } else {
                 localData = data || [];
                 render();
@@ -273,17 +322,35 @@
                 .subscribe();
         }
 
-        function render(filter = "") {
+        function setFilter(cat) {
+            currentFilterCategory = cat;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.innerText === cat);
+            });
+            render(document.getElementById('searchInput').value);
+        }
+
+        function render(searchQuery = "") {
             const container = document.getElementById('gridContainer');
             container.innerHTML = '';
-            const filtered = localData.filter(p => p.nama.toLowerCase().includes(filter.toLowerCase()));
+            
+            let filtered = localData;
+            
+            if (currentFilterCategory !== "Semua") {
+                filtered = filtered.filter(p => p.kategori === currentFilterCategory);
+            }
+            
+            if (searchQuery) {
+                filtered = filtered.filter(p => p.nama.toLowerCase().includes(searchQuery.toLowerCase()));
+            }
+
             document.getElementById('counter').innerText = `${filtered.length} Item`;
 
             if (filtered.length === 0) {
                 container.innerHTML = `
                     <div class="col-12 text-center py-5">
                         <i data-lucide="package-search" size="48" class="text-muted mb-3"></i>
-                        <p class="text-muted">Katalog masih kosong atau tidak ditemukan.</p>
+                        <p class="text-muted">Tidak ada produk dalam kategori ini.</p>
                     </div>`;
                 lucide.createIcons();
                 return;
@@ -292,6 +359,12 @@
             filtered.forEach(p => {
                 const col = document.createElement('div');
                 col.className = 'col-sm-6 col-md-4';
+                
+                // Determine category class
+                let catClass = 'cat-basic';
+                if(p.kategori === 'Premium') catClass = 'cat-premium';
+                if(p.kategori === 'Eksklusif') catClass = 'cat-eksklusif';
+
                 col.innerHTML = `
                     <div class="product-card shadow-sm">
                         ${p.is_promo ? '<div class="badge-promo">PROMO</div>' : ''}
@@ -304,15 +377,18 @@
                             </button>
                         </div>
                         <div class="img-container">
-                            <img src="${p.image}" alt="${p.nama}" onerror="this.src='https://via.placeholder.com/300?text=Gambar+Tidak+Ada'">
+                            <img src="${p.image}" alt="${p.nama}" onerror="this.src='https://via.placeholder.com/300?text=Tanpa+Gambar'">
                         </div>
                         <div class="p-3">
-                            <div class="d-flex justify-content-between align-items-start mb-1">
-                                <span class="fw-bold text-primary">Rp${parseInt(p.is_promo && p.harga_promo > 0 ? p.harga_promo : p.harga).toLocaleString()}</span>
-                                ${p.is_promo ? `<small class="text-muted text-decoration-line-through">Rp${parseInt(p.harga).toLocaleString()}</small>` : ''}
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="badge-cat ${catClass}">${p.kategori || 'Basic'}</span>
+                                <div class="text-end">
+                                    <span class="fw-bold text-primary">Rp${parseInt(p.is_promo && p.harga_promo > 0 ? p.harga_promo : p.harga).toLocaleString()}</span>
+                                    ${p.is_promo ? `<div class="text-muted" style="font-size: 0.7rem; text-decoration: line-through;">Rp${parseInt(p.harga).toLocaleString()}</div>` : ''}
+                                </div>
                             </div>
                             <h6 class="fw-bold mb-1 text-truncate" title="${p.nama}">${p.nama}</h6>
-                            <p class="small text-muted m-0 text-truncate">${p.deskripsi || 'Tidak ada deskripsi'}</p>
+                            <p class="small text-muted m-0 text-truncate" style="height: 1.5rem;">${p.deskripsi || 'Tidak ada deskripsi'}</p>
                         </div>
                     </div>
                 `;
@@ -326,7 +402,7 @@
             formData.append('file', file);
             formData.append('upload_preset', UPLOAD_PRESET);
             const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: formData });
-            if (!res.ok) throw new Error("Gagal mengunggah foto ke Cloudinary.");
+            if (!res.ok) throw new Error("Gagal mengunggah foto.");
             const d = await res.json();
             return d.secure_url;
         }
@@ -339,7 +415,7 @@
 
             try {
                 btn.disabled = true;
-                setLoader(true, "Menyimpan...", "Sinkronisasi ke database...");
+                setLoader(true, "Memproses...", "Menyimpan data produk ke cloud...");
 
                 let finalUrl = document.getElementById('imgPreview').src;
                 if (fileInput.files.length > 0) {
@@ -348,6 +424,7 @@
 
                 const payload = {
                     nama: document.getElementById('nama').value,
+                    kategori: document.getElementById('kategori').value,
                     harga: Number(document.getElementById('harga').value),
                     is_promo: document.getElementById('isPromo').checked,
                     harga_promo: Number(document.getElementById('hargaPromo').value) || 0,
@@ -366,7 +443,7 @@
                 resetForm();
                 fetchData();
             } catch (err) {
-                alert("Error: " + err.message);
+                alert("Kesalahan Sistem: " + err.message);
                 setLoader(false);
             } finally {
                 btn.disabled = false;
@@ -374,10 +451,10 @@
         };
 
         window.deleteProduct = async (id) => {
-            if (!confirm("Hapus produk ini secara permanen?")) return;
-            setLoader(true, "Menghapus...", "Sedang memperbarui database...");
+            if (!confirm("Hapus produk ini? Tindakan ini tidak bisa dibatalkan.")) return;
+            setLoader(true, "Menghapus...", "Sedang membersihkan data dari server...");
             const { error } = await _supabase.from('products').delete().eq('id', id);
-            if (error) alert("Gagal menghapus.");
+            if (error) alert("Gagal menghapus produk.");
             fetchData();
         };
 
@@ -386,6 +463,7 @@
             if (!p) return;
             document.getElementById('editId').value = p.id;
             document.getElementById('nama').value = p.nama;
+            document.getElementById('kategori').value = p.kategori || "Basic";
             document.getElementById('harga').value = p.harga;
             document.getElementById('isPromo').checked = p.is_promo;
             document.getElementById('hargaPromo').value = p.harga_promo;
@@ -394,7 +472,7 @@
             document.getElementById('promoSection').classList.toggle('hidden', !p.is_promo);
             document.getElementById('previewBox').classList.remove('hidden');
             document.getElementById('btnCancel').classList.remove('hidden');
-            document.getElementById('formHeader').innerText = "Edit Produk";
+            document.getElementById('formHeader').innerText = "Edit Detail Produk";
             document.getElementById('btnSave').innerHTML = '<i data-lucide="refresh-cw" class="me-2" size="18"></i>PERBARUI DATA';
             window.scrollTo({top: 0, behavior: 'smooth'});
             lucide.createIcons();
@@ -423,7 +501,7 @@
             document.getElementById('promoSection').classList.add('hidden');
             document.getElementById('btnCancel').classList.add('hidden');
             document.getElementById('formHeader').innerText = "Tambah Produk Baru";
-            document.getElementById('btnSave').innerHTML = '<i data-lucide="save" class="me-2" size="18"></i>SIMPAN KE SUPABASE';
+            document.getElementById('btnSave').innerHTML = '<i data-lucide="save" class="me-2" size="18"></i>SIMPAN KE CLOUD';
             document.getElementById('btnSave').disabled = false;
             lucide.createIcons();
         };
