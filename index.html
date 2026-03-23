@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Katalog Produk Pro - Muflih Print (Multi-Image)</title>
+    <title>Katalog Produk Pro - Muflih Print (Multi-Image Utama)</title>
     <!-- Framework & Fonts -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -16,14 +16,12 @@
             --promo: #ef4444;
             --bg: #f8fafc;
             --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            --gold: #f59e0b;
         }
         body { 
             background-color: var(--bg); 
             font-family: 'Inter', sans-serif;
             color: #1e293b;
             min-height: 100vh;
-            margin: 0;
         }
         
         .main-card { 
@@ -33,8 +31,8 @@
             box-shadow: var(--card-shadow);
             position: sticky;
             top: 20px;
-            z-index: 100;
         }
+
         .product-card {
             background: white;
             border-radius: 16px;
@@ -44,10 +42,7 @@
             height: 100%;
             position: relative;
         }
-        .product-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-        }
+
         .img-container {
             height: 200px;
             background: #f1f5f9;
@@ -57,11 +52,13 @@
             overflow: hidden;
             position: relative;
         }
+
         .img-container img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
+
         .multi-indicator {
             position: absolute;
             bottom: 10px;
@@ -73,6 +70,7 @@
             font-size: 10px;
             backdrop-filter: blur(4px);
         }
+
         .action-btns {
             position: absolute;
             top: 10px;
@@ -84,53 +82,19 @@
             z-index: 10;
         }
         .product-card:hover .action-btns { opacity: 1; }
-        
-        .loading-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.95);
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-        }
-        .hidden { display: none !important; }
-        .badge-promo {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: var(--promo);
-            color: white;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            z-index: 5;
-        }
-        
-        .badge-cat {
-            padding: 3px 10px;
-            border-radius: 6px;
-            font-size: 0.65rem;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-        .cat-basic { background: #e0f2fe; color: #0369a1; }
-        .cat-premium { background: #e0e7ff; color: #4338ca; }
-        .cat-eksklusif { background: #fef3c7; color: #b45309; border: 1px solid #fcd34d; }
-        
+
+        /* Preview Grid Styling */
         .preview-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-            gap: 8px;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 10px;
             margin-top: 10px;
         }
         .preview-item {
             aspect-ratio: 1;
-            border-radius: 8px;
+            border-radius: 12px;
             overflow: hidden;
-            border: 1px solid #ddd;
+            border: 2px solid #e2e8f0;
             position: relative;
         }
         .preview-item img {
@@ -138,6 +102,34 @@
             height: 100%;
             object-fit: cover;
         }
+        .preview-item.is-main {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+        }
+        .main-label {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--primary);
+            color: white;
+            font-size: 8px;
+            text-align: center;
+            font-weight: 800;
+            padding: 2px 0;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.9);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        .hidden { display: none !important; }
 
         .search-box { position: relative; }
         .search-box i {
@@ -157,20 +149,6 @@
             border: none;
             border-radius: 12px;
         }
-        .filter-btn {
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            transition: all 0.2s;
-            border: 1px solid #e2e8f0;
-            background: white;
-            color: #64748b;
-        }
-        .filter-btn.active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
     </style>
 </head>
 <body>
@@ -178,13 +156,12 @@
     <div id="loader" class="loading-overlay">
         <div class="spinner-border text-primary mb-3" role="status"></div>
         <h5 class="fw-bold" id="loaderText">Menghubungkan...</h5>
-        <div id="statusDetail" class="small text-muted mt-2 text-center px-4">Sinkronisasi Cloud</div>
     </div>
 
     <div class="container-fluid py-4 px-lg-5">
         <header class="mb-5 text-center">
             <h2 class="fw-800 text-primary mb-0">MUFLIH PRINT</h2>
-            <p class="text-muted">Manajemen Katalog & Kualitas Produk (Multi-Image)</p>
+            <p class="text-muted">Kelola Gambar Utama & Galeri Produk</p>
         </header>
 
         <div class="row g-4">
@@ -192,211 +169,110 @@
             <div class="col-xl-4">
                 <div class="main-card">
                     <div class="d-flex align-items-center mb-4">
-                        <i data-lucide="package-plus" class="text-primary me-2"></i>
-                        <h5 class="fw-bold m-0" id="formHeader">Tambah Produk Baru</h5>
+                        <i data-lucide="image-plus" class="text-primary me-2"></i>
+                        <h5 class="fw-bold m-0" id="formHeader">Tambah Produk</h5>
                     </div>
 
                     <form id="productForm">
                         <input type="hidden" id="editId" value="">
-                        <input type="hidden" id="existingImages" value="">
                         
                         <div class="mb-3">
                             <label class="form-label small fw-bold text-muted">NAMA PRODUK</label>
-                            <input type="text" id="nama" class="form-control" placeholder="Nama produk..." required>
+                            <input type="text" id="nama" class="form-control" required>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label small fw-bold text-muted">KATEGORI</label>
                             <select id="kategori" class="form-select" required>
-                                <option value="" disabled selected>Pilih Kategori</option>
                                 <option value="Basic">Basic</option>
                                 <option value="Premium">Premium</option>
                                 <option value="Eksklusif">Eksklusif</option>
                             </select>
                         </div>
 
-                        <div class="row g-2">
-                            <div class="col-md-7 mb-3">
-                                <label class="form-label small fw-bold text-muted">HARGA (RP)</label>
-                                <input type="number" id="harga" class="form-control" placeholder="0" required>
-                            </div>
-                            <div class="col-md-5 mb-3">
-                                <label class="form-label small fw-bold text-muted">PROMO?</label>
-                                <div class="form-check form-switch pt-2">
-                                    <input class="form-check-input" type="checkbox" id="isPromo">
-                                    <label class="form-check-label small" for="isPromo">Aktif</label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="promoSection" class="mb-3 p-3 bg-light rounded border hidden">
-                            <label class="form-label small fw-bold text-danger">HARGA DISKON</label>
-                            <input type="number" id="hargaPromo" class="form-control border-danger" placeholder="0">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">HARGA (RP)</label>
+                            <input type="number" id="harga" class="form-control" required>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label small fw-bold text-muted">DESKRIPSI</label>
-                            <textarea id="deskripsi" class="form-control" rows="2" placeholder="Detail produk..."></textarea>
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="form-label small fw-bold text-muted">FOTO PRODUK (BISA PILIH BANYAK)</label>
+                            <label class="form-label small fw-bold text-muted">UPLOAD GAMBAR (PILIH SEKALIGUS)</label>
                             <input type="file" id="imageInput" class="form-control" accept="image/*" multiple>
                             <div id="previewBox" class="mt-3 hidden">
-                                <p class="small fw-bold text-muted mb-1">Pratinjau Gambar:</p>
+                                <p class="small text-muted mb-2"><i data-lucide="info" size="12"></i> Gambar pertama otomatis menjadi <b>Gambar Utama</b>.</p>
                                 <div id="imagePreviewGrid" class="preview-grid"></div>
                             </div>
                         </div>
 
                         <div class="d-grid gap-2">
-                            <button type="submit" id="btnSave" class="btn btn-primary py-3 fw-bold">
-                                <i data-lucide="save" class="me-2" size="18"></i>SIMPAN PRODUK
-                            </button>
-                            <button type="button" id="btnCancel" class="btn btn-outline-secondary py-2 hidden" onclick="resetForm()">
-                                BATALKAN EDIT
-                            </button>
+                            <button type="submit" id="btnSave" class="btn btn-primary py-3 fw-bold">SIMPAN PRODUK</button>
+                            <button type="button" id="btnCancel" class="btn btn-outline-secondary py-2 hidden" onclick="resetForm()">BATAL</button>
                         </div>
                     </form>
                 </div>
             </div>
 
-            <!-- KATALOG DISPLAY -->
+            <!-- KATALOG -->
             <div class="col-xl-8">
-                <div class="mb-4">
-                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 mb-3">
-                        <div class="search-box w-100 shadow-sm" style="max-width: 400px;">
-                            <i data-lucide="search" size="18"></i>
-                            <input type="text" id="searchInput" class="form-control border-0" placeholder="Cari nama produk...">
-                        </div>
-                        <span id="counter" class="badge bg-primary rounded-pill px-3 py-2">0 Item</span>
+                <div class="mb-4 d-flex justify-content-between align-items-center">
+                    <div class="search-box w-50">
+                        <i data-lucide="search" size="18"></i>
+                        <input type="text" id="searchInput" class="form-control border-0 shadow-sm" placeholder="Cari produk...">
                     </div>
-                    
-                    <div class="d-flex flex-wrap gap-2" id="filterContainer">
-                        <button class="btn filter-btn active" onclick="setFilter('Semua')">Semua</button>
-                        <button class="btn filter-btn" onclick="setFilter('Basic')">Basic</button>
-                        <button class="btn filter-btn" onclick="setFilter('Premium')">Premium</button>
-                        <button class="btn filter-btn" onclick="setFilter('Eksklusif')">Eksklusif</button>
-                    </div>
+                    <span id="counter" class="badge bg-primary px-3 py-2">0 Item</span>
                 </div>
-
                 <div id="gridContainer" class="row g-3"></div>
             </div>
         </div>
     </div>
 
     <script>
-        // Konfigurasi API
         const SUPABASE_URL = "https://zqxeoveanevsvynptckm.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxeGVvdmVhbmV2c3Z5bnB0Y2ttIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyNzUzODEsImV4cCI6MjA4OTg1MTM4MX0.eeIaytpW1wtWPJc2FbhufkDkhONUt9yypTZU4dTVmsM";
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
         const CLOUD_NAME = "dqncj2lg2"; 
         const UPLOAD_PRESET = "katalogdanstok"; 
 
         let localData = [];
-        let currentFilterCategory = "Semua";
 
-        window.onload = () => {
-            lucide.createIcons();
-            fetchData();
-            setupRealtime();
-        };
+        window.onload = () => { fetchData(); lucide.createIcons(); };
 
-        function setLoader(show, title = "", sub = "") {
-            const l = document.getElementById('loader');
-            if (show) {
-                l.classList.remove('hidden');
-                document.getElementById('loaderText').innerText = title;
-                document.getElementById('statusDetail').innerText = sub;
-            } else {
-                l.classList.add('hidden');
-            }
+        function setLoader(show, text = "Memuat...") {
+            document.getElementById('loader').classList.toggle('hidden', !show);
+            document.getElementById('loaderText').innerText = text;
         }
 
         async function fetchData() {
-            setLoader(true, "Sinkronisasi...", "Memuat data terbaru...");
-            const { data, error } = await _supabase
-                .from('products')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (error) {
-                console.error(error);
-                setLoader(true, "Error", "Gagal memuat data dari database.");
-            } else {
-                localData = data || [];
-                render();
-                setLoader(false);
-            }
+            setLoader(true);
+            const { data, error } = await _supabase.from('products').select('*').order('created_at', { ascending: false });
+            if (!error) { localData = data || []; render(); }
+            setLoader(false);
         }
 
-        function setupRealtime() {
-            _supabase.channel('public:products')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, fetchData)
-                .subscribe();
-        }
-
-        function setFilter(cat) {
-            currentFilterCategory = cat;
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.innerText === cat);
-            });
-            render(document.getElementById('searchInput').value);
-        }
-
-        function render(searchQuery = "") {
+        function render(q = "") {
             const container = document.getElementById('gridContainer');
             container.innerHTML = '';
-            
-            let filtered = localData;
-            if (currentFilterCategory !== "Semua") filtered = filtered.filter(p => p.kategori === currentFilterCategory);
-            if (searchQuery) filtered = filtered.filter(p => p.nama.toLowerCase().includes(searchQuery.toLowerCase()));
-
+            const filtered = localData.filter(p => p.nama.toLowerCase().includes(q.toLowerCase()));
             document.getElementById('counter').innerText = `${filtered.length} Item`;
 
-            if (filtered.length === 0) {
-                container.innerHTML = `<div class="col-12 text-center py-5 text-muted"><p>Tidak ada produk.</p></div>`;
-                return;
-            }
-
             filtered.forEach(p => {
+                const images = p.image.split(',');
+                const mainImg = images[0]; // Gambar pertama adalah Utama
                 const col = document.createElement('div');
-                col.className = 'col-sm-6 col-md-4';
-                
-                // Handling images (string or array)
-                let images = [];
-                try {
-                    // Cek apakah string dipisahkan koma atau JSON array
-                    images = p.image.includes(',') ? p.image.split(',') : [p.image];
-                } catch(e) {
-                    images = [p.image];
-                }
-
-                const mainImg = images[0] || 'https://via.placeholder.com/300?text=No+Image';
-                let catClass = 'cat-basic';
-                if(p.kategori === 'Premium') catClass = 'cat-premium';
-                if(p.kategori === 'Eksklusif') catClass = 'cat-eksklusif';
-
+                col.className = 'col-md-4 col-sm-6';
                 col.innerHTML = `
-                    <div class="product-card">
-                        ${p.is_promo ? '<div class="badge-promo">PROMO</div>' : ''}
+                    <div class="product-card shadow-sm">
                         <div class="action-btns">
-                            <button class="btn btn-sm btn-light border" onclick="editProduct('${p.id}')"><i data-lucide="edit-2" size="14"></i></button>
+                            <button class="btn btn-sm btn-light border" onclick="editProduct('${p.id}')"><i data-lucide="edit-3" size="14"></i></button>
                             <button class="btn btn-sm btn-light border text-danger" onclick="deleteProduct('${p.id}')"><i data-lucide="trash" size="14"></i></button>
                         </div>
                         <div class="img-container">
-                            <img src="${mainImg}" alt="${p.nama}" onerror="this.src='https://via.placeholder.com/300?text=Error+Image'">
-                            ${images.length > 1 ? `<div class="multi-indicator">+${images.length} Foto</div>` : ''}
+                            <img src="${mainImg}" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
+                            ${images.length > 1 ? `<div class="multi-indicator">+${images.length} Gambar</div>` : ''}
                         </div>
                         <div class="p-3">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="badge-cat ${catClass}">${p.kategori || 'Basic'}</span>
-                                <div class="text-end">
-                                    <span class="fw-bold text-primary">Rp${parseInt(p.is_promo && p.harga_promo > 0 ? p.harga_promo : p.harga).toLocaleString()}</span>
-                                </div>
-                            </div>
-                            <h6 class="fw-bold mb-1 text-truncate">${p.nama}</h6>
-                            <p class="small text-muted m-0 text-truncate">${p.deskripsi || '-'}</p>
+                            <h6 class="fw-bold mb-1">${p.nama}</h6>
+                            <p class="text-primary fw-bold mb-0">Rp${parseInt(p.harga).toLocaleString()}</p>
                         </div>
                     </div>
                 `;
@@ -405,9 +281,35 @@
             lucide.createIcons();
         }
 
-        // FUNGSI MULTI UPLOAD
-        async function uploadFiles(files) {
-            const uploadPromises = Array.from(files).map(async (file) => {
+        // Handle Preview & Identifying Main Image
+        document.getElementById('imageInput').onchange = (e) => {
+            const files = Array.from(e.target.files);
+            const grid = document.getElementById('imagePreviewGrid');
+            grid.innerHTML = '';
+            
+            if (files.length > 0) {
+                document.getElementById('previewBox').classList.remove('hidden');
+                files.forEach((file, index) => {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        const div = document.createElement('div');
+                        // Index 0 ditandai sebagai Utama
+                        div.className = `preview-item ${index === 0 ? 'is-main' : ''}`;
+                        div.innerHTML = `
+                            ${index === 0 ? '<div class="main-label">UTAMA</div>' : ''}
+                            <img src="${ev.target.result}">
+                        `;
+                        grid.appendChild(div);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            } else {
+                document.getElementById('previewBox').classList.add('hidden');
+            }
+        };
+
+        async function uploadImages(files) {
+            const promises = Array.from(files).map(async (file) => {
                 const formData = new FormData();
                 formData.append('file', file);
                 formData.append('upload_preset', UPLOAD_PRESET);
@@ -415,44 +317,32 @@
                 const d = await res.json();
                 return d.secure_url;
             });
-            return await Promise.all(uploadPromises);
+            return await Promise.all(promises);
         }
 
         document.getElementById('productForm').onsubmit = async (e) => {
             e.preventDefault();
-            const btn = document.getElementById('btnSave');
-            const fileInput = document.getElementById('imageInput');
+            setLoader(true, "Menyimpan...");
             const editId = document.getElementById('editId').value;
-            const existingImagesStr = document.getElementById('existingImages').value;
-
+            const files = document.getElementById('imageInput').files;
+            
             try {
-                btn.disabled = true;
-                setLoader(true, "Memproses...", "Mengunggah gambar & menyimpan data...");
-
-                let finalImages = [];
-                
-                // Jika sedang edit dan ada gambar lama
-                if (editId && existingImagesStr) {
-                    finalImages = existingImagesStr.split(',');
+                let imageUrls = [];
+                // Jika ada file baru, upload. Jika edit tanpa ganti file, gunakan data lama.
+                if (files.length > 0) {
+                    imageUrls = await uploadImages(files);
+                } else if (editId) {
+                    const existing = localData.find(x => x.id === editId);
+                    imageUrls = existing.image.split(',');
                 }
 
-                // Jika user memilih file baru, upload dan tambahkan/ganti
-                if (fileInput.files.length > 0) {
-                    const uploadedUrls = await uploadFiles(fileInput.files);
-                    // Jika edit, kita bisa gabungkan atau ganti (di sini kita ganti saja jika ada upload baru)
-                    finalImages = uploadedUrls;
-                }
-
-                if (finalImages.length === 0) throw new Error("Wajib pilih minimal satu foto.");
+                if (imageUrls.length === 0) throw new Error("Pilih gambar!");
 
                 const payload = {
                     nama: document.getElementById('nama').value,
                     kategori: document.getElementById('kategori').value,
                     harga: Number(document.getElementById('harga').value),
-                    is_promo: document.getElementById('isPromo').checked,
-                    harga_promo: Number(document.getElementById('hargaPromo').value) || 0,
-                    deskripsi: document.getElementById('deskripsi').value,
-                    image: finalImages.join(',') // Simpan sebagai string dipisahkan koma
+                    image: imageUrls.join(',') // Gabungkan URL dengan koma
                 };
 
                 if (editId) {
@@ -464,95 +354,51 @@
                 resetForm();
                 fetchData();
             } catch (err) {
-                alert("Gagal: " + err.message);
+                alert(err.message);
                 setLoader(false);
-            } finally {
-                btn.disabled = false;
-            }
-        };
-
-        // PREVIEW HANDLER
-        document.getElementById('imageInput').onchange = (e) => {
-            const files = e.target.files;
-            const grid = document.getElementById('imagePreviewGrid');
-            grid.innerHTML = '';
-            
-            if (files.length > 0) {
-                document.getElementById('previewBox').classList.remove('hidden');
-                Array.from(files).forEach(file => {
-                    const reader = new FileReader();
-                    reader.onload = (ex) => {
-                        const div = document.createElement('div');
-                        div.className = 'preview-item';
-                        div.innerHTML = `<img src="${ex.target.result}">`;
-                        grid.appendChild(div);
-                    };
-                    reader.readAsDataURL(file);
-                });
             }
         };
 
         window.editProduct = (id) => {
             const p = localData.find(i => i.id === id);
             if (!p) return;
-            
-            resetForm(); // Bersihkan dulu
-            
             document.getElementById('editId').value = p.id;
             document.getElementById('nama').value = p.nama;
             document.getElementById('kategori').value = p.kategori;
             document.getElementById('harga').value = p.harga;
-            document.getElementById('isPromo').checked = p.is_promo;
-            document.getElementById('hargaPromo').value = p.harga_promo;
-            document.getElementById('deskripsi').value = p.deskripsi;
-            document.getElementById('existingImages').value = p.image;
             
-            // Tampilkan preview gambar yang sudah ada
             const grid = document.getElementById('imagePreviewGrid');
+            grid.innerHTML = '';
             const images = p.image.split(',');
             document.getElementById('previewBox').classList.remove('hidden');
-            images.forEach(url => {
+            images.forEach((url, idx) => {
                 const div = document.createElement('div');
-                div.className = 'preview-item';
-                div.innerHTML = `<img src="${url}">`;
+                div.className = `preview-item ${idx === 0 ? 'is-main' : ''}`;
+                div.innerHTML = `${idx === 0 ? '<div class="main-label">UTAMA</div>' : ''}<img src="${url}">`;
                 grid.appendChild(div);
             });
 
-            document.getElementById('promoSection').classList.toggle('hidden', !p.is_promo);
-            document.getElementById('btnCancel').classList.remove('hidden');
             document.getElementById('formHeader').innerText = "Edit Produk";
-            document.getElementById('btnSave').innerHTML = '<i data-lucide="refresh-cw" class="me-2"></i>PERBARUI DATA';
+            document.getElementById('btnCancel').classList.remove('hidden');
             window.scrollTo({top: 0, behavior: 'smooth'});
-            lucide.createIcons();
         };
 
         window.deleteProduct = async (id) => {
-            if (!confirm("Hapus produk ini?")) return;
-            setLoader(true, "Menghapus...");
-            await _supabase.from('products').delete().eq('id', id);
-            fetchData();
-        };
-
-        document.getElementById('isPromo').onchange = (e) => {
-            document.getElementById('promoSection').classList.toggle('hidden', !e.target.checked);
-        };
-
-        document.getElementById('searchInput').oninput = (e) => {
-            render(e.target.value);
+            if (confirm("Hapus?")) {
+                await _supabase.from('products').delete().eq('id', id);
+                fetchData();
+            }
         };
 
         window.resetForm = () => {
             document.getElementById('productForm').reset();
             document.getElementById('editId').value = "";
-            document.getElementById('existingImages').value = "";
             document.getElementById('previewBox').classList.add('hidden');
-            document.getElementById('imagePreviewGrid').innerHTML = '';
-            document.getElementById('promoSection').classList.add('hidden');
             document.getElementById('btnCancel').classList.add('hidden');
-            document.getElementById('formHeader').innerText = "Tambah Produk Baru";
-            document.getElementById('btnSave').innerHTML = '<i data-lucide="save" class="me-2"></i>SIMPAN PRODUK';
-            lucide.createIcons();
+            document.getElementById('formHeader').innerText = "Tambah Produk";
         };
+
+        document.getElementById('searchInput').oninput = (e) => render(e.target.value);
     </script>
 </body>
 </html>
