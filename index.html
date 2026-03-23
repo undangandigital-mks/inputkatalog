@@ -397,15 +397,27 @@
             lucide.createIcons();
         }
 
-        async function uploadToCloudinary(file) {
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('upload_preset', UPLOAD_PRESET);
-            const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: formData });
-            if (!res.ok) throw new Error("Gagal mengunggah foto.");
-            const d = await res.json();
-            return d.secure_url;
-        }
+       async function uploadToCloudinary(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', UPLOAD_PRESET);
+    
+    // MENAMBAHKAN TRANSFORMASI OTOMATIS SAAT UPLOAD
+    // 'limit' akan mengecilkan gambar hanya jika lebarnya di atas 1200px
+    // 'auto' akan memilih kompresi terbaik agar file menjadi ringan (target < 300kb)
+    formData.append('transformation', 'w_1200,c_limit,q_auto:good,f_auto');
+
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { 
+        method: 'POST', 
+        body: formData 
+    });
+
+    if (!res.ok) throw new Error("Gagal mengunggah foto.");
+    const d = await res.json();
+    
+    // Hasil yang dikembalikan adalah URL gambar yang sudah terkompres di storage Cloudinary
+    return d.secure_url;
+}
 
         document.getElementById('productForm').onsubmit = async (e) => {
             e.preventDefault();
