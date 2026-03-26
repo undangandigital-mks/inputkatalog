@@ -315,57 +315,72 @@
         }
 
         function render(q = "") {
-            const container = document.getElementById('gridContainer');
-            container.innerHTML = '';
-            
-            // Re-apply the photo visibility class based on current state
-            container.classList.toggle('show-photos', showPhotos);
-
-            const filtered = localData.filter(p => p.nama.toLowerCase().includes(q.toLowerCase()));
-            document.getElementById('counter').innerText = `${filtered.length} Item`;
-
-filtered.forEach(p => {
-    const images = p.image ? p.image.split(',') : [];
-    const mainImg = images[0] || '';
-    const hasPromo = p.is_promo === true;
+    const container = document.getElementById('gridContainer');
+    container.innerHTML = '';
     
-    // LOGIKA BARU: Cek apakah foto harus dibuat atau tidak
-    const imgHtml = showPhotos 
-        ? `<img src="${mainImg}" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
-           ${images.length > 1 ? `<div class="multi-indicator">+${images.length} Gambar</div>` : ''}`
-        : `<div class="d-flex align-items-center justify-content-center h-100 w-100 text-muted" style="font-size: 0.7rem;">
-            <i data-lucide="image-off" class="me-1" size="12"></i> Foto Off
-           </div>`;
+    // Sinkronkan class parent
+    container.classList.toggle('show-photos', showPhotos);
 
-    const col = document.createElement('div');
-    col.className = 'col-md-4 col-sm-6';
-    col.innerHTML = `
-        <div class="product-card shadow-sm">
-            ${hasPromo ? '<div class="promo-badge">PROMO</div>' : ''}
-            <div class="action-btns">
-                <button class="btn btn-sm btn-light border" onclick="editProduct('${p.id}')"><i data-lucide="edit-3" size="14"></i></button>
-                <button class="btn btn-sm btn-light border text-danger" onclick="deleteProduct('${p.id}')"><i data-lucide="trash" size="14"></i></button>
-            </div>
-            <div class="img-container">
-                ${imgHtml}
-            </div>
-            <div class="p-3">
-                <h6 class="fw-bold mb-1 text-truncate">${p.nama}</h6>
-                <div class="mb-1">
-                    ${hasPromo ? 
-                        `<span class="text-primary fw-bold">Rp${parseInt(p.harga_promo).toLocaleString()}</span>
-                         <small class="text-muted text-decoration-line-through ms-1">Rp${parseInt(p.harga).toLocaleString()}</small>` : 
-                        `<span class="text-primary fw-bold">Rp${parseInt(p.harga).toLocaleString()}</span>`
-                    }
+    const filtered = localData.filter(p => p.nama.toLowerCase().includes(q.toLowerCase()));
+    document.getElementById('counter').innerText = `${filtered.length} Item`;
+
+    filtered.forEach(p => {
+        const images = p.image ? p.image.split(',') : [];
+        const hasPromo = p.is_promo === true;
+        
+        // --- LOGIKA KETAT: Link gambar hanya didefinisikan jika showPhotos TRUE ---
+        let imgContent = "";
+        
+        if (showPhotos) {
+            // Link gambar HANYA dimasukkan ke variabel jika foto ditampilkan
+            const mainImg = images[0] || 'https://via.placeholder.com/300?text=No+Image';
+            imgContent = `
+                <img src="${mainImg}" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
+                ${images.length > 1 ? `<div class="multi-indicator">+${images.length} Gambar</div>` : ''}
+            `;
+        } else {
+            // Jika showPhotos FALSE, link gambar (URL) tidak ada di dalam variabel ini sama sekali
+            imgContent = `
+                <div class="d-flex flex-column align-items-center justify-content-center h-100 w-100 text-center px-2" style="background: #f1f5f9;">
+                    <i data-lucide="image-off" class="text-muted mb-2" size="20"></i>
+                    <span class="fw-bold text-dark text-uppercase" style="font-size: 0.65rem; line-height: 1.2;">
+                        ${p.nama}
+                    </span>
                 </div>
-                <p class="small text-muted text-truncate mb-0" style="font-size: 0.75rem;">${p.deskripsi || 'Tidak ada deskripsi'}</p>
-            </div>
-        </div>
-    `;
-    container.appendChild(col);
-});
-            lucide.createIcons();
+            `;
         }
+
+        const col = document.createElement('div');
+        col.className = 'col-md-4 col-sm-6';
+        col.innerHTML = `
+            <div class="product-card shadow-sm">
+                ${hasPromo ? '<div class="promo-badge">PROMO</div>' : ''}
+                <div class="action-btns">
+                    <button class="btn btn-sm btn-light border" onclick="editProduct('${p.id}')"><i data-lucide="edit-3" size="14"></i></button>
+                    <button class="btn btn-sm btn-light border text-danger" onclick="deleteProduct('${p.id}')"><i data-lucide="trash" size="14"></i></button>
+                </div>
+                <div class="img-container" style="display: flex !important;"> 
+                    ${imgContent}
+                </div>
+                <div class="p-3">
+                    <h6 class="fw-bold mb-1 text-truncate">${p.nama}</h6>
+                    <div class="mb-1">
+                        ${hasPromo ? 
+                            `<span class="text-primary fw-bold">Rp${parseInt(p.harga_promo).toLocaleString()}</span>
+                             <small class="text-muted text-decoration-line-through ms-1">Rp${parseInt(p.harga).toLocaleString()}</small>` : 
+                            `<span class="text-primary fw-bold">Rp${parseInt(p.harga).toLocaleString()}</span>`
+                        }
+                    </div>
+                    <p class="small text-muted text-truncate mb-0" style="font-size: 0.75rem;">${p.deskripsi || 'Tidak ada deskripsi'}</p>
+                </div>
+            </div>
+        `;
+        container.appendChild(col);
+    });
+    
+    // Inisialisasi ulang icon Lucide setelah render
+    lucide.createIcons();
+}
 
         function updatePreviewLabels() {
             const items = document.querySelectorAll('.preview-item');
