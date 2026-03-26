@@ -318,7 +318,6 @@
     const container = document.getElementById('gridContainer');
     container.innerHTML = '';
     
-    // Sinkronkan class parent
     container.classList.toggle('show-photos', showPhotos);
 
     const filtered = localData.filter(p => p.nama.toLowerCase().includes(q.toLowerCase()));
@@ -328,18 +327,15 @@
         const images = p.image ? p.image.split(',') : [];
         const hasPromo = p.is_promo === true;
         
-        // --- LOGIKA KETAT: Link gambar hanya didefinisikan jika showPhotos TRUE ---
         let imgContent = "";
         
         if (showPhotos) {
-            // Link gambar HANYA dimasukkan ke variabel jika foto ditampilkan
             const mainImg = images[0] || 'https://via.placeholder.com/300?text=No+Image';
             imgContent = `
                 <img src="${mainImg}" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
                 ${images.length > 1 ? `<div class="multi-indicator">+${images.length} Gambar</div>` : ''}
             `;
         } else {
-            // Jika showPhotos FALSE, link gambar (URL) tidak ada di dalam variabel ini sama sekali
             imgContent = `
                 <div class="d-flex flex-column align-items-center justify-content-center h-100 w-100 text-center px-2" style="background: #f1f5f9;">
                     <i data-lucide="image-off" class="text-muted mb-2" size="20"></i>
@@ -364,24 +360,22 @@
                 </div>
                 <div class="p-3">
                     <h6 class="fw-bold mb-1 text-truncate">${p.nama}</h6>
-                    <div class="mb-1">
+                    <div class="mb-0">
                         ${hasPromo ? 
                             `<span class="text-primary fw-bold">Rp${parseInt(p.harga_promo).toLocaleString()}</span>
-                             <small class="text-muted text-decoration-line-through ms-1">Rp${parseInt(p.harga).toLocaleString()}</small>` : 
+                             <small class="text-muted text-decoration-line-through ms-1" style="font-size: 0.7rem;">Rp${parseInt(p.harga).toLocaleString()}</small>` : 
                             `<span class="text-primary fw-bold">Rp${parseInt(p.harga).toLocaleString()}</span>`
                         }
                     </div>
-                    <p class="small text-muted text-truncate mb-0" style="font-size: 0.75rem;">${p.deskripsi || 'Tidak ada deskripsi'}</p>
-                </div>
+                    </div>
             </div>
         `;
         container.appendChild(col);
     });
     
-    // Inisialisasi ulang icon Lucide setelah render
     lucide.createIcons();
 }
-
+      
         function updatePreviewLabels() {
             const items = document.querySelectorAll('.preview-item');
             items.forEach((item, idx) => {
