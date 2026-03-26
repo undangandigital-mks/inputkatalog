@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Katalog Produk Pro - Muflih Print (Drag & Drop Order)</title>
+    <title>Katalog Produk Pro - Muflih Print</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -43,14 +43,20 @@
             position: relative;
         }
 
+        /* Foto Container - Hidden by default */
         .img-container {
             height: 200px;
             background: #f1f5f9;
-            display: flex;
+            display: none; /* Default Sembunyi */
             align-items: center;
             justify-content: center;
             overflow: hidden;
             position: relative;
+        }
+
+        /* Class untuk menampilkan foto */
+        .show-photos .img-container {
+            display: flex;
         }
 
         .img-container img {
@@ -134,12 +140,7 @@
             padding: 2px 0;
             z-index: 2;
         }
-        /* Sortable Ghost Style */
-        .sortable-ghost {
-            opacity: 0.4;
-            border: 2px dashed var(--primary);
-        }
-
+        
         .loading-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -170,6 +171,12 @@
             border: none;
             border-radius: 12px;
         }
+
+        /* Toggle Switch Styling */
+        .form-check-input:checked {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
     </style>
 </head>
 <body>
@@ -186,6 +193,7 @@
         </header>
 
         <div class="row g-4">
+            <!-- Form Section -->
             <div class="col-xl-4">
                 <div class="main-card">
                     <div class="d-flex align-items-center mb-4">
@@ -231,7 +239,7 @@
                             <input type="file" id="imageInput" class="form-control" accept="image/*" multiple>
                             <div id="previewBox" class="mt-3 hidden">
                                 <p class="small text-muted mb-2">
-                                    <i data-lucide="move" size="12"></i> <b>Seret gambar</b> untuk mengatur urutan. Gambar paling kiri adalah <b>Utama</b>.
+                                    <i data-lucide="move" size="12"></i> <b>Seret gambar</b> untuk mengatur urutan.
                                 </p>
                                 <div id="imagePreviewGrid" class="preview-grid"></div>
                             </div>
@@ -245,14 +253,24 @@
                 </div>
             </div>
 
+            <!-- List Section -->
             <div class="col-xl-8">
-                <div class="mb-4 d-flex justify-content-between align-items-center">
-                    <div class="search-box w-50">
+                <div class="mb-4 d-flex flex-wrap gap-3 justify-content-between align-items-center">
+                    <div class="search-box flex-grow-1" style="min-width: 250px;">
                         <i data-lucide="search" size="18"></i>
                         <input type="text" id="searchInput" class="form-control border-0 shadow-sm" placeholder="Cari produk...">
                     </div>
-                    <span id="counter" class="badge bg-primary px-3 py-2">0 Item</span>
+                    
+                    <div class="d-flex align-items-center gap-3">
+                        <!-- Toggle Foto -->
+                        <div class="form-check form-switch bg-white px-3 py-2 rounded-3 shadow-sm border">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="togglePhoto">
+                            <label class="form-check-label small fw-bold text-muted" for="togglePhoto">TAMPILKAN FOTO</label>
+                        </div>
+                        <span id="counter" class="badge bg-primary px-3 py-2">0 Item</span>
+                    </div>
                 </div>
+                
                 <div id="gridContainer" class="row g-3"></div>
             </div>
         </div>
@@ -266,19 +284,23 @@
         const UPLOAD_PRESET = "katalogdanstok"; 
 
         let localData = [];
-        let currentFiles = []; // Menyimpan file asli atau URL untuk diurutkan
+        let showPhotos = false;
 
         // Inisialisasi SortableJS
         const el = document.getElementById('imagePreviewGrid');
         const sortable = Sortable.create(el, {
             animation: 150,
             ghostClass: 'sortable-ghost',
-            onEnd: function() {
-                updatePreviewLabels();
-            }
+            onEnd: () => updatePreviewLabels()
         });
 
         window.onload = () => { fetchData(); lucide.createIcons(); };
+
+        // Toggle Foto Logic
+        document.getElementById('togglePhoto').addEventListener('change', (e) => {
+    showPhotos = e.target.checked;
+    render(document.getElementById('searchInput').value); // Tambahkan ini agar list me-render ulang
+});
 
         function setLoader(show, text = "Memuat...") {
             document.getElementById('loader').classList.toggle('hidden', !show);
@@ -295,46 +317,56 @@
         function render(q = "") {
             const container = document.getElementById('gridContainer');
             container.innerHTML = '';
+            
+            // Re-apply the photo visibility class based on current state
+            container.classList.toggle('show-photos', showPhotos);
+
             const filtered = localData.filter(p => p.nama.toLowerCase().includes(q.toLowerCase()));
             document.getElementById('counter').innerText = `${filtered.length} Item`;
 
-            filtered.forEach(p => {
-                const images = p.image.split(',');
-                const mainImg = images[0];
-                const hasPromo = p.is_promo === true;
-                
-                const col = document.createElement('div');
-                col.className = 'col-md-4 col-sm-6';
-                col.innerHTML = `
-                    <div class="product-card shadow-sm">
-                        ${hasPromo ? '<div class="promo-badge">PROMO</div>' : ''}
-                        <div class="action-btns">
-                            <button class="btn btn-sm btn-light border" onclick="editProduct('${p.id}')"><i data-lucide="edit-3" size="14"></i></button>
-                            <button class="btn btn-sm btn-light border text-danger" onclick="deleteProduct('${p.id}')"><i data-lucide="trash" size="14"></i></button>
-                        </div>
-                        <div class="img-container">
-                            <img src="${mainImg}" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
-                            ${images.length > 1 ? `<div class="multi-indicator">+${images.length} Gambar</div>` : ''}
-                        </div>
-                        <div class="p-3">
-                            <h6 class="fw-bold mb-1 text-truncate">${p.nama}</h6>
-                            <div class="mb-1">
-                                ${hasPromo ? 
-                                    `<span class="text-primary fw-bold">Rp${parseInt(p.harga_promo).toLocaleString()}</span>
-                                     <small class="text-muted text-decoration-line-through ms-1">Rp${parseInt(p.harga).toLocaleString()}</small>` : 
-                                    `<span class="text-primary fw-bold">Rp${parseInt(p.harga).toLocaleString()}</span>`
-                                }
-                            </div>
-                            <p class="small text-muted text-truncate mb-0" style="font-size: 0.75rem;">${p.deskripsi || 'Tidak ada deskripsi'}</p>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(col);
-            });
+filtered.forEach(p => {
+    const images = p.image ? p.image.split(',') : [];
+    const mainImg = images[0] || '';
+    const hasPromo = p.is_promo === true;
+    
+    // LOGIKA BARU: Cek apakah foto harus dibuat atau tidak
+    const imgHtml = showPhotos 
+        ? `<img src="${mainImg}" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
+           ${images.length > 1 ? `<div class="multi-indicator">+${images.length} Gambar</div>` : ''}`
+        : `<div class="d-flex align-items-center justify-content-center h-100 w-100 text-muted" style="font-size: 0.7rem;">
+            <i data-lucide="image-off" class="me-1" size="12"></i> Foto Off
+           </div>`;
+
+    const col = document.createElement('div');
+    col.className = 'col-md-4 col-sm-6';
+    col.innerHTML = `
+        <div class="product-card shadow-sm">
+            ${hasPromo ? '<div class="promo-badge">PROMO</div>' : ''}
+            <div class="action-btns">
+                <button class="btn btn-sm btn-light border" onclick="editProduct('${p.id}')"><i data-lucide="edit-3" size="14"></i></button>
+                <button class="btn btn-sm btn-light border text-danger" onclick="deleteProduct('${p.id}')"><i data-lucide="trash" size="14"></i></button>
+            </div>
+            <div class="img-container">
+                ${imgHtml}
+            </div>
+            <div class="p-3">
+                <h6 class="fw-bold mb-1 text-truncate">${p.nama}</h6>
+                <div class="mb-1">
+                    ${hasPromo ? 
+                        `<span class="text-primary fw-bold">Rp${parseInt(p.harga_promo).toLocaleString()}</span>
+                         <small class="text-muted text-decoration-line-through ms-1">Rp${parseInt(p.harga).toLocaleString()}</small>` : 
+                        `<span class="text-primary fw-bold">Rp${parseInt(p.harga).toLocaleString()}</span>`
+                    }
+                </div>
+                <p class="small text-muted text-truncate mb-0" style="font-size: 0.75rem;">${p.deskripsi || 'Tidak ada deskripsi'}</p>
+            </div>
+        </div>
+    `;
+    container.appendChild(col);
+});
             lucide.createIcons();
         }
 
-        // Fungsi label ulang "Utama" saat drag selesai
         function updatePreviewLabels() {
             const items = document.querySelectorAll('.preview-item');
             items.forEach((item, idx) => {
@@ -347,8 +379,8 @@
                         newLabel.innerText = 'UTAMA';
                         item.prepend(newLabel);
                     }
-                } else {
-                    if (label) label.remove();
+                } else if (label) {
+                    label.remove();
                 }
             });
         }
@@ -365,7 +397,7 @@
                     reader.onload = (ev) => {
                         const div = document.createElement('div');
                         div.className = `preview-item ${index === 0 ? 'is-main' : ''}`;
-                        div.dataset.fileName = file.name; // Simpan referensi nama file
+                        div.dataset.fileName = file.name;
                         div.innerHTML = `${index === 0 ? '<div class="main-label">UTAMA</div>' : ''}<img src="${ev.target.result}">`;
                         grid.appendChild(div);
                     };
@@ -375,7 +407,7 @@
         };
 
         async function compressImage(file, maxSizeKb = 300) {
-            return new Promise((resolve, reject) => {
+            return new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
                 reader.onload = (event) => {
@@ -406,29 +438,21 @@
             e.preventDefault();
             setLoader(true, "Memproses...");
             const editId = document.getElementById('editId').value;
-            
-            // Ambil urutan gambar dari DOM
             const previewItems = Array.from(document.querySelectorAll('.preview-item'));
             const filesFromInput = Array.from(document.getElementById('imageInput').files);
             
             try {
                 let finalUrls = [];
-
                 for (let item of previewItems) {
                     const imgTag = item.querySelector('img');
                     const src = imgTag.getAttribute('src');
 
                     if (src.startsWith('http')) {
-                        // Jika sudah URL (saat edit)
                         finalUrls.push(src);
                     } else {
-                        // Jika base64 (file baru), cari file aslinya di input berdasarkan nama (opsi simpel)
-                        // atau temukan berdasarkan index/data attribute
                         const fileName = item.dataset.fileName;
                         const fileMatch = filesFromInput.find(f => f.name === fileName);
-                        
                         if (fileMatch) {
-                            setLoader(true, `Mengupload ${fileMatch.name}...`);
                             const blob = await compressImage(fileMatch);
                             const formData = new FormData();
                             formData.append('file', blob);
@@ -439,8 +463,6 @@
                         }
                     }
                 }
-
-                if (finalUrls.length === 0) throw new Error("Pilih gambar!");
 
                 const payload = {
                     nama: document.getElementById('nama').value,
@@ -476,14 +498,16 @@
             
             const grid = document.getElementById('imagePreviewGrid');
             grid.innerHTML = '';
-            const images = p.image.split(',');
-            document.getElementById('previewBox').classList.remove('hidden');
-            images.forEach((url, idx) => {
-                const div = document.createElement('div');
-                div.className = `preview-item ${idx === 0 ? 'is-main' : ''}`;
-                div.innerHTML = `${idx === 0 ? '<div class="main-label">UTAMA</div>' : ''}<img src="${url}">`;
-                grid.appendChild(div);
-            });
+            const images = p.image ? p.image.split(',') : [];
+            if (images.length > 0) {
+                document.getElementById('previewBox').classList.remove('hidden');
+                images.forEach((url, idx) => {
+                    const div = document.createElement('div');
+                    div.className = `preview-item ${idx === 0 ? 'is-main' : ''}`;
+                    div.innerHTML = `${idx === 0 ? '<div class="main-label">UTAMA</div>' : ''}<img src="${url}">`;
+                    grid.appendChild(div);
+                });
+            }
 
             document.getElementById('formHeader').innerText = "Edit Produk";
             document.getElementById('btnCancel').classList.remove('hidden');
